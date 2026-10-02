@@ -14,8 +14,7 @@ events = pd.read_csv(file_path)
 events["event_datetime"] = pd.to_datetime(
     events["timestamp"],
     unit="ms",
-    utc=True,
-)
+    utc=True,)
 events = events.drop(columns=["timestamp"])
 duplicate_mask = events.duplicated()
 rows_before = len(events)
@@ -33,7 +32,6 @@ events = events.sort_values(["visitorid", "event_datetime"]).reset_index(drop=Tr
 gap = events.groupby("visitorid")["event_datetime"].diff()
 new_session = gap.isna() | (gap >= pd.Timedelta(minutes=30))
 events["session_id"] = new_session.cumsum()
-
 sessions = events.groupby("session_id").agg(
     visitorid=("visitorid", "first"),
     session_start=("event_datetime", "min"),
@@ -43,6 +41,7 @@ sessions = events.groupby("session_id").agg(
 event_counts = pd.crosstab(events["session_id"], events["event"])
 sessions = sessions.join(event_counts, on="session_id")
 
-print(sessions[["view", "addtocart", "transaction"]].gt(0).sum())
 
-print(sessions.head().to_string(index=False))
+first_view = events.loc[events["event"] == "view"].groupby("session_id")["event_datetime"].min()
+
+print(first_view.head())
