@@ -43,5 +43,40 @@ sessions = sessions.join(event_counts, on="session_id")
 
 
 first_view = events.loc[events["event"] == "view"].groupby("session_id")["event_datetime"].min()
+sessions["first_view"] = sessions["session_id"].map(
+    events.loc[events["event"] == "view"]
+    .groupby("session_id")["event_datetime"]
+    .min()
+)
+after_view = events["event_datetime"] > events["session_id"].map(
+    sessions.set_index("session_id")["first_view"]
+)
+sessions["first_cart"] = sessions["session_id"].map(
+    events.loc[(events["event"] == "addtocart") & after_view]
+    .groupby("session_id")["event_datetime"]
+    .min()
+)
+after_view = events["event_datetime"] > events["session_id"].map(
+    sessions.set_index("session_id")["first_view"]
+)
+sessions["first_cart"] = sessions["session_id"].map(
+    events.loc[(events["event"] == "addtocart") & after_view]
+    .groupby("session_id")["event_datetime"]
+    .min()
+)
+after_cart = events["event_datetime"] > events["session_id"].map(
+    sessions.set_index("session_id")["first_cart"]
+)
+
+sessions["first_purchase"] = sessions["session_id"].map(
+    events.loc[(events["event"] == "transaction") & after_cart]
+    .groupby("session_id")["event_datetime"]
+    .min()
+)
+views, carts, purchases = sessions[
+    ["first_view", "first_cart", "first_purchase"]
+].notna().sum()
+purchase_sessions = sessions["transaction"].gt(0).sum()
+outside = sessions["transaction"].gt(0) & sessions["first_purchase"].isna()
 
 print(first_view.head())
