@@ -79,4 +79,16 @@ views, carts, purchases = sessions[
 purchase_sessions = sessions["transaction"].gt(0).sum()
 outside = sessions["transaction"].gt(0) & sessions["first_purchase"].isna()
 
-print(first_view.head())
+no_cart_after_view = outside & sessions["first_view"].notna() & sessions["first_cart"].isna()
+
+sessions["has_purchase"] = sessions["transaction"].gt(0)
+sessions["completed_funnel"] = sessions["first_purchase"].notna()
+sessions["duration_minutes"] = (
+    sessions["session_end"] - sessions["session_start"]
+).dt.total_seconds() / 60
+
+sessions["minutes_to_purchase"] = (
+    sessions["first_purchase"] - sessions["first_view"]
+).dt.total_seconds() / 60
+
+sessions["session_date"] = sessions["session_start"].dt.date
